@@ -1,4 +1,4 @@
-name: Build Portable Release
+name: Build Portable Application
 
 on:
   workflow_dispatch:
@@ -13,25 +13,26 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-portable-app:
+    name: Build & Package App
     runs-on: ubuntu-slim
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Set up Python
+      - name: Set up Python 3.14
         uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 
-      - name: Build Portable Windows Package
+      - name: Build portable Windows ZIP package
         run: python build.py
 
-      - name: Upload Artifact (CI Test)
+      - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: portable-windows-build
+          name: portable-app-dist
           path: dist/*.zip
 
       - name: Attach ZIP to GitHub Release
