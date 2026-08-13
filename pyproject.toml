@@ -8,3 +8,8 @@ dependencies = [
     # Add any external packages required by your application here, e.g.:
     # "requests>=2.31.0"
 ]
+
+[tool.portable]
+# Executable to launch: "python.exe" (console window) or "pythonw.exe" (windowless GUI)
+executable = "python.exe"
+

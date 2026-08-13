@@ -41,7 +41,17 @@ def get_project_metadata():
         if not name or not version:
             log("pyproject.toml is missing 'name' or 'version' under [project].", "ERROR")
             sys.exit(1)
-        return name, version
+        
+        # Read tool configuration for portable build
+        tool_portable = data.get("tool", {}).get("portable", {})
+        executable = tool_portable.get("executable")
+        if not executable:
+            if tool_portable.get("gui", False):
+                executable = "pythonw.exe"
+            else:
+                executable = "python.exe"
+                
+        return name, version, executable
     except Exception as e:
         log(f"Error parsing pyproject.toml: {e}", "ERROR")
         sys.exit(1)
@@ -245,30 +255,24 @@ def find_and_copy_vcruntime(dest_dir: Path):
             return
     log("vcruntime140.dll not found in default locations. Skipping copy...", "WARNING")
 
-def create_launcher(build_dir: Path):
+def create_launcher(build_dir: Path, executable: str = "python.exe"):
     launcher_path = build_dir / "run.bat"
-    log(f"Generating launcher: {launcher_path}")
+    log(f"Generating launcher: {launcher_path} (Using {executable})")
     
-    bat_content = (
-        "@echo off\n"
-        'setlocal\n'
-        'cd /d "%~dp0"\n'
-        'start "" "%~dp0python\\python.exe" "%~dp0app\\main.py" %*\n'
-        'endlocal\n'
-    )
-    # Note: Using start runs it as a background process or standard window. 
-    # The requirement specifies:
-    # @echo off
-    # "%~dp0python\python.exe" "%~dp0app\main.py" %*
-    # Let's write the exact script requested, as it runs synchronously and returns output to console.
-    exact_bat_content = (
-        "@echo off\n"
-        '"%~dp0python\\python.exe" "%~dp0app\\main.py" %*\n'
-    )
+    if executable.lower() == "pythonw.exe":
+        bat_content = (
+            "@echo off\n"
+            'start "" "%~dp0python\\pythonw.exe" "%~dp0app\\main.py" %*\n'
+        )
+    else:
+        bat_content = (
+            "@echo off\n"
+            '"%~dp0python\\python.exe" "%~dp0app\\main.py" %*\n'
+        )
     
     with open(launcher_path, "w", newline="\r\n") as f:
-        f.write(exact_bat_content)
-    log("Launcher run.bat generated.", "SUCCESS")
+        f.write(bat_content)
+    log(f"Launcher run.bat generated with {executable}.", "SUCCESS")
 
 def create_zip_archive(name: str, version: str):
     DIST_DIR.mkdir(parents=True, exist_ok=True)
@@ -288,8 +292,8 @@ def create_zip_archive(name: str, version: str):
 def main():
     log("Starting portable Windows packaging process...")
     
-    name, version = get_project_metadata()
-    log(f"Project Metadata: {name} (v{version})")
+    name, version, executable = get_project_metadata()
+    log(f"Project Metadata: {name} (v{version}) | Executable: {executable}")
     
     # Setup directories
     if BUILD_DIR.exists():
@@ -323,7 +327,7 @@ def main():
     find_and_copy_vcruntime(python_dest)
     
     # 6. Create Launcher
-    create_launcher(BUILD_DIR)
+    create_launcher(BUILD_DIR, executable)
     
     # 7. Package to Zip
     create_zip_archive(name, version)
