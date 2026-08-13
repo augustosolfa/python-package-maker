@@ -242,8 +242,15 @@ def configure_pth_file(python_dir: Path, version: str):
     log("Successfully configured path configuration file.", "SUCCESS")
 
 def find_and_copy_vcruntime(dest_dir: Path):
-    # Look for vcruntime140.dll in current python sys.prefix, system32, or search path
+    # 1. Check if vcruntime140.dll was already extracted from the python embed archive
+    target_dll = dest_dir / "vcruntime140.dll"
+    if target_dll.exists():
+        log(f"vcruntime140.dll is already present in embed directory ({target_dll.name}).", "SUCCESS")
+        return
+
+    # 2. Look for local candidates (assets directory, Python sys.prefix, or system path)
     candidates = [
+        ASSETS_DIR / "vcruntime140.dll",
         Path(sys.prefix) / "vcruntime140.dll",
         Path(os.path.dirname(sys.executable)) / "vcruntime140.dll",
         Path("C:/Windows/System32/vcruntime140.dll")
@@ -251,9 +258,37 @@ def find_and_copy_vcruntime(dest_dir: Path):
     for candidate in candidates:
         if candidate.exists():
             log(f"Found vcruntime140.dll at {candidate}. Copying for portability...")
-            shutil.copy2(candidate, dest_dir / "vcruntime140.dll")
+            shutil.copy2(candidate, target_dll)
             return
-    log("vcruntime140.dll not found in default locations. Skipping copy...", "WARNING")
+
+    # 3. Fallback: Pure-Python download from official PyPI wheel if missing (e.g., on Linux CI)
+    log("vcruntime140.dll not found locally. Downloading from PyPI wheel...", "INFO")
+    try:
+        ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+        cached_dll = ASSETS_DIR / "vcruntime140.dll"
+        if not cached_dll.exists():
+            # PyPI msvc-runtime wheel URL containing official signed Microsoft C++ runtime DLLs
+            wheel_url = "https://files.pythonhosted.org/packages/py3/m/msvc_runtime/msvc_runtime-14.40.33810-py3-none-win_amd64.whl"
+            temp_whl = ASSETS_DIR / "msvc_runtime.whl"
+            log(f"Downloading {wheel_url}...")
+            urllib.request.urlretrieve(wheel_url, temp_whl)
+            
+            with zipfile.ZipFile(temp_whl, "r") as z:
+                for member in z.namelist():
+                    if member.lower().endswith("vcruntime140.dll"):
+                        with z.open(member) as src, open(cached_dll, "wb") as dst:
+                            shutil.copyfileobj(src, dst)
+                        break
+            temp_whl.unlink(missing_ok=True)
+            
+        if cached_dll.exists():
+            shutil.copy2(cached_dll, target_dll)
+            log("Successfully cached and copied vcruntime140.dll.", "SUCCESS")
+            return
+    except Exception as e:
+        log(f"Failed to auto-download vcruntime140.dll: {e}", "WARNING")
+
+    log("vcruntime140.dll not found. Skipping copy...", "WARNING")
 
 def create_launcher(build_dir: Path, executable: str = "python.exe"):
     launcher_path = build_dir / "run.bat"
