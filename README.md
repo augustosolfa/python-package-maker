@@ -15,7 +15,7 @@ A small standalone script (`build.py`) that packages Python projects into portab
 ## How to use
 
 1. Place source code in `src/` (entry point: `src/main.py`).
-2. Define dependencies in `pyproject.toml`.
+2. Configure project metadata, dependencies, and launcher options (e.g., `python.exe` vs `pythonw.exe`) in `pyproject.toml`.
 3. Run:
    ```cmd
    python build.py
