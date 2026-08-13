@@ -7,17 +7,7 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
-# Try importing tomllib (Python 3.11+), fallback to tomli if needed
-try:
-    import tomllib
-except ImportError:
-    # If tomllib is not present (older Python running build.py), try importing tomli
-    try:
-        import tomli as tomllib
-    except ImportError:
-        print("[ERROR] build.py requires Python 3.11+ (which includes 'tomllib').")
-        print("Please run this script with a modern Python version or install 'tomli'.")
-        sys.exit(1)
+import tomllib
 
 # Define paths relative to this script
 BASE_DIR = Path(__file__).resolve().parent
