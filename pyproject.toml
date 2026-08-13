@@ -1,0 +1,10 @@
+[project]
+name = "my_awesome_app"
+version = "0.1.0"
+description = "A portable Windows application packaged with Python 3.14 Embed"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    # Add any external packages required by your application here, e.g.:
+    # "requests>=2.31.0"
+]

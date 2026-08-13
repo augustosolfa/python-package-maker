@@ -1,0 +1,25 @@
+# Python build artifacts and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+.venv/
+env/
+venv/
+
+# Build and Distribution directories
+build/
+dist/
+*.egg-info/
+
+# Downloaded embed archives (auto-handled by build.py)
+assets/*.zip
+*.zip
+
+# IDE & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
